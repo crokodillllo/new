@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Record & Send Video</title>
+</head>
+<body>
+  <h2>Upload Video</h2>
+  <input type="file" id="videoFile" accept="video/*">
+  <button id="uploadBtn">Upload & Send</button>
+
+  <script>
+    const CLOUD_NAME = "your_cloud_name"; // ⚡ Replace
+    const UPLOAD_PRESET = "your_upload_preset"; // ⚡ Replace
+    const FORM_URL = "https://formsubmit.co/your_email_here"; // ⚡ Replace
+
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("videoFile").files[0];
+      if (!fileInput) {
+        alert("Please select a video first");
+        return;
+      }
+
+      // 1️⃣ Upload video to Cloudinary
+      let formData = new FormData();
+      formData.append("file", fileInput);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      formData.append("resource_type", "video"); // ensures it's treated as a video
+
+      try {
+        const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/video/upload`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await cloudinaryRes.json();
+
+        if (!data.secure_url) {
+          throw new Error("Cloudinary upload failed");
+        }
+
+        const videoLink = data.secure_url;
+        console.log("✅ Video link:", videoLink);
+
+        // 2️⃣ Send video link via FormSubmit
+        let emailData = new FormData();
+        emailData.append("video_link", videoLink);
+
+        await fetch(FORM_URL, {
+          method: "POST",
+          body: emailData
+        });
+
+        alert("✅ Video uploaded and link sent successfully!");
+      } catch (err) {
+        console.error(err);
+        alert("❌ Upload failed: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
